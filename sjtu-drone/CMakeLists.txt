@@ -17,7 +17,10 @@ find_package(catkin REQUIRED COMPONENTS
     tf2
     tf2_geometry_msgs
     laser_geometry
-    gazebo_ros)
+    gazebo_ros
+    catkin_simple)
+
+add_definitions(-std=c++14 -Wall -Wextra)
 
 find_package(gazebo REQUIRED)
 ## System dependencies are found with CMake's conventions

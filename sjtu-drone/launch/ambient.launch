@@ -12,9 +12,10 @@
   <arg name="debug" default="false"/>
   <arg name="verbose" default="false"/>
   <arg name="world_name" default="$(find sjtu_drone)/worlds/crossing.world"/>
+  <arg name="dronePointCloudTopic" default="/velodyne_points" />
 
   <!-- launch the custom world -->
-    <include file="$(find gazebo_ros)/launch/empty_world.launch" >
+  <include file="$(find gazebo_ros)/launch/empty_world.launch" >
     <arg name="paused" value="$(arg paused)"/>
     <arg name="use_sim_time" value="$(arg use_sim_time)"/>
     <arg name="gui" value="$(arg gui)"/>
@@ -34,4 +35,8 @@
     <param name="publish_frequency" type="double" value="30.0" />
   </node>   
 
+  <arg name="rviz" default="true" />
+  <group if="$(arg rviz)">
+      <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find sjtu_drone)/rviz_cfg/velodyne.rviz" />
+  </group>
 </launch>
