@@ -31,6 +31,8 @@ void moveTo(float x, float y, float z) {
   twist_msg.angular.z = 0;
 
   pubCmd.publish(twist_msg);
+  usleep(1 * microsecond);
+  ROS_INFO("Moving to...");
 }
 
 void velMode(bool on) {
@@ -53,15 +55,16 @@ bool takeOff(void) {
   ROS_INFO("Taking Off...");
   isFlying = true;
   usleep(10 * microsecond);
+  return true;
 }
 
 bool hover(void) {
   if (!isFlying)
     return false;
 
-  twist_msg.linear.x = 33;
+  twist_msg.linear.x = 0;
   twist_msg.linear.y = 0;
-  twist_msg.linear.z = 2;
+  twist_msg.linear.z = 0;
   twist_msg.angular.x = 0.0;
   twist_msg.angular.y = 0.0;
   twist_msg.angular.z = 0.0;
@@ -82,6 +85,23 @@ void posCtrl(bool on) {
     ROS_INFO("Switching position control off...");
 }
 
+
+bool rise(float speed) {
+  if (!isFlying)
+    return false;
+
+  twist_msg.linear.x = 0.0;
+  twist_msg.linear.y = 0.0;
+  twist_msg.linear.z = speed;
+  twist_msg.angular.x = 0.0; // flag for preventing hovering
+  twist_msg.angular.y = 0.0;
+  twist_msg.angular.z = 0.0;
+  pubCmd.publish(twist_msg);
+  ROS_INFO("Rising...");
+  usleep(1 * microsecond);
+  return true;
+}
+
 int main(int argc, char **argv) {
   ros::init(argc, argv, "drone_piloting");
 
@@ -95,9 +115,11 @@ int main(int argc, char **argv) {
   pubCmd = node.advertise<geometry_msgs::Twist>("/cmd_vel", 1, true);
   pubVelMode = node.advertise<std_msgs::Bool>("/drone/vel_mode", 1024);
 
-  velMode(true);
+  velMode(false);
   takeOff();
-  //posCtrl(true);
+  posCtrl(false);
+  //rise(2);
+  moveTo(38,-2,2);
   hover();
 
   ros::spin();
