@@ -1,15 +1,16 @@
 #include <iostream>
 #include <geometry_msgs/Twist.h>
+#include <geometry_msgs/Pose.h>
 #include <ros/ros.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/Empty.h>
 
 ros::Publisher pubTakeOff;
-ros::Publisher pubLand;
-ros::Publisher pubReset;
 ros::Publisher pubCmd;
 ros::Publisher pubPosCtrl;
 ros::Publisher pubVelMode;
+
+ros::Subscriber pubGtPoseSub;
 
 std_msgs::Bool bool_msg;
 geometry_msgs::Twist twist_msg;
@@ -71,6 +72,7 @@ bool hover(void) {
 
   pubCmd.publish(twist_msg);
   ROS_INFO("Hovering...");
+  usleep(10 * microsecond);
   return true;  
 }
 
@@ -85,32 +87,16 @@ void posCtrl(bool on) {
     ROS_INFO("Switching position control off...");
 }
 
-
-bool rise(float speed) {
-  if (!isFlying)
-    return false;
-
-  twist_msg.linear.x = 0.0;
-  twist_msg.linear.y = 0.0;
-  twist_msg.linear.z = speed;
-  twist_msg.angular.x = 0.0; // flag for preventing hovering
-  twist_msg.angular.y = 0.0;
-  twist_msg.angular.z = 0.0;
-  pubCmd.publish(twist_msg);
-  ROS_INFO("Rising...");
-  usleep(1 * microsecond);
-  return true;
+void PositionCallback(const geometry_msgs::PoseConstPtr& msg) {
+   ROS_INFO("Position X: [%If] \n\t\t\t\t Position Y: [%If] \n\t\t\t\t Position Z: [%If] \n", msg->position.x,msg->position.y, msg->position.z);
 }
 
 int main(int argc, char **argv) {
   ros::init(argc, argv, "drone_piloting");
 
   ros::NodeHandle node;
-  ros::NodeHandle n;
 
   pubTakeOff = node.advertise<std_msgs::Empty>("/drone/takeoff", 1, true);
-  pubLand = node.advertise<std_msgs::Empty>("/drone/land", 1, true);
-  pubReset = node.advertise<std_msgs::Empty>("/drone/reset", 1024);
   pubPosCtrl = node.advertise<std_msgs::Bool>("/drone/posctrl", 1024);
   pubCmd = node.advertise<geometry_msgs::Twist>("/cmd_vel", 1, true);
   pubVelMode = node.advertise<std_msgs::Bool>("/drone/vel_mode", 1024);
@@ -118,9 +104,10 @@ int main(int argc, char **argv) {
   velMode(false);
   takeOff();
   posCtrl(false);
-  //rise(2);
-  moveTo(38,-2,2);
+  moveTo(38,-1.85,2);
   hover();
+  
+  pubGtPoseSub = node.subscribe("drone/gt_pose", 1024, PositionCallback);
 
   ros::spin();
 
