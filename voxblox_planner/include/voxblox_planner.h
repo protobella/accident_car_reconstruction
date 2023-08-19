@@ -23,6 +23,10 @@ namespace voxblox_planner {
 
       ros::Subscriber odometry_sub_;
 
+      bool verbose_;
+      std::string global_frame_id_;
+      std::string local_frame_id_;
+
       mav_msgs::EigenOdometry odometry_;
       // Map!
       voxblox::EsdfServer voxblox_server_;

@@ -17,10 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
     tf2
     tf2_geometry_msgs
     laser_geometry
-    gazebo_ros
-    catkin_simple)
-
-add_definitions(-std=c++14 -Wall -Wextra)
+    gazebo_ros)
 
 find_package(gazebo REQUIRED)
 ## System dependencies are found with CMake's conventions
@@ -179,6 +176,15 @@ add_executable( drone_piloting
 )
 
 target_link_libraries( drone_piloting
+  ${catkin_LIBRARIES}
+  ${Boost_LIBRARIES} 
+)
+
+add_executable( camera_distance
+  src/camera_distance.cpp
+)
+
+target_link_libraries( camera_distance
   ${catkin_LIBRARIES}
   ${Boost_LIBRARIES} 
 )
