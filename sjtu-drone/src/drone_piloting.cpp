@@ -4,6 +4,7 @@
 #include <ros/ros.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/Empty.h>
+#include <std_srvs/Empty.h>
 
 ros::Publisher pubTakeOff;
 ros::Publisher pubCmd;
@@ -12,9 +13,12 @@ ros::Publisher pubVelMode;
 
 ros::Subscriber pubGtPoseSub;
 
+ros::ServiceClient client;
+
 std_msgs::Bool bool_msg;
 geometry_msgs::Twist twist_msg;
 std_msgs::Empty empty;
+std_srvs::Empty srv;
 
 bool isVelMode = false;
 bool isPosctrl = false;
@@ -104,10 +108,18 @@ int main(int argc, char **argv) {
   velMode(false);
   takeOff();
   posCtrl(false);
-  moveTo(38,-1.85,2);
-  hover();
-  
-  pubGtPoseSub = node.subscribe("drone/gt_pose", 1024, PositionCallback);
+  //moveTo(38,-1.85,2);
+  //hover();
+
+  client = node.serviceClient<std_srvs::Empty>("/voxblox_node/generate_mesh");
+  if (client.call(srv)) {
+    ROS_INFO("Success!");
+  } else {
+    ROS_ERROR("Failed to call service voxblox_node/generate_mesh");
+    return 1;
+  }
+
+  //pubGtPoseSub = node.subscribe("drone/gt_pose", 1024, PositionCallback);
 
   ros::spin();
 

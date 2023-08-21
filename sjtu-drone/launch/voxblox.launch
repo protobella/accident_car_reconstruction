@@ -7,9 +7,7 @@
   
   <node name="voxblox_node" pkg="voxblox_ros" type="tsdf_server" output="screen" args="-alsologtostderr" clear_params="true">
     <remap from="pointcloud" to="$(arg dronePointCloudTopic)"/>
-    <!-- <remap from="voxblox_node/esdf_map_out" to="esdf_map" /> -->
-    <remap from="voxblox_node/mesh_pointcloud" to="mesh_pointcloud" />
-    <remap from="voxblox_node/mesh_pcl" to="mesh_pcl" />
+    <remap from="voxblox_node/esdf_map_out" to="esdf_map" />
 
     <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
     <param name="tsdf_voxels_per_side" value="$(arg voxels_per_side)" />
@@ -21,18 +19,18 @@
     <param name="world_frame" value="$(arg world_frame)" />
     <param name="color_mode" value="normals" />
 
-    <param name="generate_mesh" value="true" />
-    <param name="output_mesh_as_pointcloud" value="true" />
-    <param name="output_mesh_as_pcl_mesh" value="true" />
-    <param name="mesh_filename" value="accident.ply" />
+    <param name="mesh_filename" value="$(find voxblox_ros)/mesh_results/accident.ply" />
   </node>
 
-  <!-- <node name="voxblox_planner" pkg="voxblox_planner" type="voxblox_planner_node" output="screen" args="-alsologtostderr">
+  <node name="voxblox_planner" pkg="voxblox_planner" type="voxblox_planner_node" output="screen" args="-alsologtostderr">
     <remap from="odometry" to="great_estimator/odometry" />
-    <remap from="voxblox_planner/esdf_map_in" to="esdf_map" />
+    <remap from="voxblox_node/esdf_map_in" to="esdf_map" />
     <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
     <param name="tsdf_voxels_per_side" value="$(arg voxels_per_side)" />
     <param name="update_mesh_every_n_sec" value="0.0" />
     <param name="world_frame" value="$(arg world_frame)" />
-  </node> -->
+  </node>
+
+  <!-- <node pkg="rosservice" type="rosservice" name="mesh_filename" args="call --><!--wait /voxblox_node/generate_mesh" /> -->
+
 </launch>
