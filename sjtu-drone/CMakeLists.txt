@@ -170,12 +170,12 @@ set_target_properties( plugin_ros_laser
     ${PROJECT_SOURCE_DIR}/plugins
 )
 
-################## 9. waypoints ####################
-add_executable( drone_waypoints
-  src/drone_waypoints.cpp
+################## 9. piloting ####################
+add_executable( drone_piloting
+  src/drone_piloting.cpp
 )
 
-target_link_libraries( drone_waypoints
+target_link_libraries( drone_piloting
   ${catkin_LIBRARIES}
   ${Boost_LIBRARIES} 
 )

@@ -1,26 +1,29 @@
 #include <iostream>
 #include <geometry_msgs/Twist.h>
+#include <geometry_msgs/Pose.h>
 #include <ros/ros.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/Empty.h>
+#include <std_srvs/Empty.h>
 
 ros::Publisher pubTakeOff;
-ros::Publisher pubLand;
-ros::Publisher pubReset;
 ros::Publisher pubCmd;
 ros::Publisher pubPosCtrl;
 ros::Publisher pubVelMode;
 
+ros::Subscriber pubGtPoseSub;
+
+ros::ServiceClient client;
+
 std_msgs::Bool bool_msg;
 geometry_msgs::Twist twist_msg;
 std_msgs::Empty empty;
+std_srvs::Empty srv;
 
 bool isVelMode = false;
 bool isPosctrl = false;
+bool isFlying = false;
 
-int wp=0;
-double vetorwpx[2]={33.75,35.75};
-double vetorwpy[2]={-0.85,-1.85};
 unsigned int microsecond = 1000000;
 
 void moveTo(float x, float y, float z) {
@@ -33,6 +36,8 @@ void moveTo(float x, float y, float z) {
   twist_msg.angular.z = 0;
 
   pubCmd.publish(twist_msg);
+  usleep(1 * microsecond);
+  ROS_INFO("Moving to...");
 }
 
 void velMode(bool on) {
@@ -47,10 +52,32 @@ void velMode(bool on) {
   }
 }
 
-void takeOff(void) {
+bool takeOff(void) {
+  if (isFlying)
+    return false;
+
   pubTakeOff.publish(empty);
-  ROS_INFO("Starting...");
+  ROS_INFO("Taking Off...");
+  isFlying = true;
   usleep(10 * microsecond);
+  return true;
+}
+
+bool hover(void) {
+  if (!isFlying)
+    return false;
+
+  twist_msg.linear.x = 0;
+  twist_msg.linear.y = 0;
+  twist_msg.linear.z = 0;
+  twist_msg.angular.x = 0.0;
+  twist_msg.angular.y = 0.0;
+  twist_msg.angular.z = 0.0;
+
+  pubCmd.publish(twist_msg);
+  ROS_INFO("Hovering...");
+  usleep(10 * microsecond);
+  return true;  
 }
 
 void posCtrl(bool on) {
@@ -64,31 +91,37 @@ void posCtrl(bool on) {
     ROS_INFO("Switching position control off...");
 }
 
-void waypointPose(void) {
-  for (wp = 0; wp < 2;wp++) {
-    ROS_INFO("Flying to (%f, %f, 2) with position control",vetorwpx[wp], vetorwpy[wp]);
-    moveTo(vetorwpx[wp], vetorwpy[wp], 2);
-    usleep(20 * microsecond);
-  }
+void PositionCallback(const geometry_msgs::PoseConstPtr& msg) {
+   ROS_INFO("Position X: [%If] \n\t\t\t\t Position Y: [%If] \n\t\t\t\t Position Z: [%If] \n", msg->position.x,msg->position.y, msg->position.z);
 }
 
 int main(int argc, char **argv) {
-  ros::init(argc, argv, "drone_waypoints");
+  ros::init(argc, argv, "drone_piloting");
 
   ros::NodeHandle node;
-  ros::NodeHandle n;
 
   pubTakeOff = node.advertise<std_msgs::Empty>("/drone/takeoff", 1, true);
-  pubLand = node.advertise<std_msgs::Empty>("/drone/land", 1, true);
-  pubReset = node.advertise<std_msgs::Empty>("/drone/reset", 1024);
   pubPosCtrl = node.advertise<std_msgs::Bool>("/drone/posctrl", 1024);
   pubCmd = node.advertise<geometry_msgs::Twist>("/cmd_vel", 1, true);
   pubVelMode = node.advertise<std_msgs::Bool>("/drone/vel_mode", 1024);
 
-  velMode(true);
+  velMode(false);
   takeOff();
-  posCtrl(true);
-  waypointPose();
+  posCtrl(false);
+  //moveTo(38,-1.85,2);
+  //hover();
+
+  // generate mesh file
+  client = node.serviceClient<std_srvs::Empty>("/voxblox_node/generate_mesh");
+  if (client.call(srv)) {
+    ROS_INFO("Success to call service voxblox_node/generate_mesh!");
+  } else {
+    ROS_ERROR("Failed to call service voxblox_node/generate_mesh");
+    return 1;
+  }
+
+  // position of drone 
+  //pubGtPoseSub = node.subscribe("drone/gt_pose", 1024, PositionCallback);
 
   ros::spin();
 

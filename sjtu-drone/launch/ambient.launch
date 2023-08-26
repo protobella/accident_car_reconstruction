@@ -34,4 +34,9 @@
     <param name="publish_frequency" type="double" value="30.0" />
   </node>   
 
+  <!-- open rviz configuration -->
+  <arg name="rviz" default="true" />
+  <group if="$(arg rviz)">
+      <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find sjtu_drone)/rviz_cfg/velodyne.rviz" />
+  </group>
 </launch>
