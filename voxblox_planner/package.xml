@@ -21,6 +21,8 @@
   <build_depend>mav_msgs</build_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>std_msgs</build_depend>
+  <build_depend>mav_path_smoothing</build_depend>
+  <build_depend>mav_planning_common</build_depend>
   
   <run_depend>voxblox_ros</run_depend>
   <run_depend>voxblox_msgs</run_depend>
@@ -30,5 +32,7 @@
   <run_depend>mav_msgs</run_depend>
   <run_depend>roscpp</run_depend>
   <run_depend>std_msgs</run_depend>
+  <run_depend>mav_path_smoothing</run_depend>
+  <run_depend>mav_planning_common</run_depend>
 
 </package>

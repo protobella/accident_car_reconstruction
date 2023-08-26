@@ -111,14 +111,16 @@ int main(int argc, char **argv) {
   //moveTo(38,-1.85,2);
   //hover();
 
+  // generate mesh file
   client = node.serviceClient<std_srvs::Empty>("/voxblox_node/generate_mesh");
   if (client.call(srv)) {
-    ROS_INFO("Success!");
+    ROS_INFO("Success to call service voxblox_node/generate_mesh!");
   } else {
     ROS_ERROR("Failed to call service voxblox_node/generate_mesh");
     return 1;
   }
 
+  // position of drone 
   //pubGtPoseSub = node.subscribe("drone/gt_pose", 1024, PositionCallback);
 
   ros::spin();
