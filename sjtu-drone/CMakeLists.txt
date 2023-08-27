@@ -172,12 +172,12 @@ set_target_properties( plugin_ros_laser
 
 ################## 9. piloting ####################
 add_executable( drone_piloting
+  src/drone_object_ros.cpp
   src/drone_piloting.cpp
 )
 
 target_link_libraries( drone_piloting
   ${catkin_LIBRARIES}
-  ${Boost_LIBRARIES} 
 )
 
 ######### velodyne ###################
