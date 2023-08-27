@@ -29,6 +29,7 @@ find_package(Protobuf REQUIRED)
 find_package(OpenCV REQUIRED
 	COMPONENTS
 	opencv_highgui
+  opencv_features2d
 	CONFIG
 )
 find_package(Eigen3 REQUIRED)
@@ -62,7 +63,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
 catkin_package(
    INCLUDE_DIRS include ${GAZEBO_INCLUDE_DIRS}
    LIBRARIES gazebo_ros_velodyne_laser gazebo_ros_velodyne_gpu_laser
-   CATKIN_DEPENDS roscpp rospy image_transport std_msgs sensor_msgs geometry_msgs message_runtime gazebo_ros
+   CATKIN_DEPENDS cv_bridge roscpp rospy image_transport std_msgs sensor_msgs geometry_msgs message_runtime gazebo_ros
    DEPENDS Boost EIGEN3
 )
 
@@ -181,6 +182,7 @@ add_executable( drone_piloting
 target_link_libraries( drone_piloting
   ${catkin_LIBRARIES}
   ${Boost_LIBRARIES} 
+  ${OpenCV_LIBRARIES}
 )
 
 ######### velodyne ###################
