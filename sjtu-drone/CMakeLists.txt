@@ -179,6 +179,7 @@ add_executable( drone_piloting
 
 target_link_libraries( drone_piloting
   ${catkin_LIBRARIES}
+  ${Boost_LIBRARIES}
   ${OpenCV_LIBRARIES}
 )
 
