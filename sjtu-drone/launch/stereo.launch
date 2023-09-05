@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="ISO-8859-15"?>
+<launch>  
+  <node pkg="nodelet" type="nodelet" name="pipeline" args="manager" />
+  <include file="$(find stereo_image_proc)/launch/stereo_image_proc.launch" ns="stereo">
+    <arg name="manager" value="/pipeline" />
+    <arg name="left" value="/drone/down_camera_left" />
+    <arg name="right" value="/drone/down_camera_right" />
+    <arg name="approximate_sync" value="true" />
+    <arg name="respawn" value="true" />
+    <!-- <remap from="/stereo/left/image_raw" to="/drone/down_camera_left/image_raw" />
+    <remap from="/stereo/left/image_info" to="/drone/down_camera_left/camera_info" />
+    <remap from="/stereo/right/image_raw" to="/drone/down_camera_right/image_raw" />
+    <remap from="/stereo/right/image_info" to="/drone/down_camera_right/camera_info" /> -->
+  </include>
+</launch>

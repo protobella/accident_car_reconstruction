@@ -12,6 +12,8 @@
 #include <opencv2/features2d.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
 
+#include <sensor_msgs/PointCloud2.h>
+
 #include <cmath>
 
 // Subscriber
@@ -125,17 +127,17 @@ void poscallback (const geometry_msgs::Pose::ConstPtr &msg) {
   }
   if (flag == 2) {
     //TODO: function which translates  keypoints_as_waypoints to real world coordinates
-    keypoint_to_coordinate_translate();
+    // keypoint_to_coordinate_translate();
     // start movement to waypoints
     flag = 3;
   }
   if (flag == 3) {
-    if (i < (sizeof(waypoints)/sizeof(waypoints[0]))) {
-      waypoint_move(waypoints[i].x, waypoints[i].y, waypoints[i].z, drone_position);
-    }
-    else {
-      flag = 4;
-    }
+    // if (i < (sizeof(waypoints)/sizeof(waypoints[0]))) {
+    //   waypoint_move(waypoints[i].x, waypoints[i].y, waypoints[i].z, drone_position);
+    // }
+    // else {
+    //   flag = 4;
+    // }
     // for (int i = 0; i < keypoints_as_waypoints.size(); i++) {
     //   //TODO: get a function that controls drone to move in the direction of the waypoint
     //   //https://stackoverflow.com/questions/21613246/what-is-the-structure-of-point2f-in-opencv
@@ -148,35 +150,37 @@ void poscallback (const geometry_msgs::Pose::ConstPtr &msg) {
   }
 }
 
-void imageCallback(const sensor_msgs::ImageConstPtr& msg) {
-  if (activate_camera) {
-    try {
-      cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+// void imageCallback(const sensor_msgs::ImageConstPtr& msg) {
+//   if (activate_camera) {
+//     try {
+//       cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
 
-      cv::Mat gray_image;
-      cv::cvtColor(cv_ptr->image, gray_image, cv::COLOR_BGR2GRAY);
+//       cv::Mat gray_image;
+//       cv::cvtColor(cv_ptr->image, gray_image, cv::COLOR_BGR2GRAY);
 
-      cv::GaussianBlur(gray_image, gray_image, cv::Size(5,5), 0);
+//       cv::GaussianBlur(gray_image, gray_image, cv::Size(5,5), 0);
 
-      cv::Ptr<cv::Feature2D> fdetector = cv::ORB::create();
+//       cv::Ptr<cv::Feature2D> fdetector = cv::ORB::create();
 
-      cv::Mat descriptors;
-      fdetector->detectAndCompute(gray_image, cv::Mat(), keypoints, descriptors);
+//       cv::Mat descriptors;
+//       fdetector->detectAndCompute(gray_image, cv::Mat(), keypoints, descriptors);
 
-      cv::Mat image_with_keypoints;
-      cv::drawKeypoints(gray_image, keypoints, image_with_keypoints);
-      //cv::KeyPoint::convert(keypoints, keypoints_as_waypoints, idx);
-      // cv::imshow("Manipulated Image With Keypoints", image_with_keypoints);
-      // cv::waitKey(30);
-      flag = 2;
-    }
-    catch (cv_bridge::Exception& e) {
-      ROS_ERROR("Could not convert from '%s' to 'bgr8'.", msg->encoding.c_str());
-    }
-  }
-  activate_camera = false;
+//       cv::Mat image_with_keypoints;
+//       cv::drawKeypoints(gray_image, keypoints, image_with_keypoints);
+//       //cv::KeyPoint::convert(keypoints, keypoints_as_waypoints, idx);
+//       // cv::imshow("Manipulated Image With Keypoints", image_with_keypoints);
+//       // cv::waitKey(30);
+//       flag = 2;
+//     }
+//     catch (cv_bridge::Exception& e) {
+//       ROS_ERROR("Could not convert from '%s' to 'bgr8'.", msg->encoding.c_str());
+//     }
+//   }
+//   activate_camera = false;
+// }
+void callback2(const sensor_msgs::PointCloud2::ConstPtr &msg) {
+  ROS_INFO("Oi gatxinho");
 }
-
 int main(int argc, char **argv) {
   ros::init(argc, argv, "drone_piloting");
 
@@ -188,11 +192,11 @@ int main(int argc, char **argv) {
   
   // position of drone 
   robotpos = node.subscribe<geometry_msgs::Pose>("drone/gt_pose",1,poscallback);
-  
+  ros::Subscriber banana = node.subscribe<sensor_msgs::PointCloud2>("stereo/point_cloud2",40, callback2);
   // image callback
   // cv::namedWindow("Manipulated Image With Keypoints");
-  image_transport::ImageTransport it(node);
-  image_transport::Subscriber sub = it.subscribe("/drone/down_camera/image_raw", 1, imageCallback);
+  //image_transport::ImageTransport it(node);
+  //image_transport::Subscriber sub = it.subscribe("/drone/down_camera/image_raw", 1, imageCallback);
   ros::spin();
   // cv::destroyWindow("Manipulated Image With Keypoints");
 

@@ -2,4 +2,7 @@
 <launch>
     <include file="$(find sjtu_drone)/launch/ambient.launch"/>
     <include file="$(find sjtu_drone)/launch/voxblox.launch"/>
+    <!-- <include file="$(find cv_pipeline)/launch/cv_pipeline.launch"/> -->
+
+
 </launch>
