@@ -27,8 +27,10 @@ find_package(OpenCV REQUIRED
 	COMPONENTS
 	opencv_highgui
   opencv_features2d
+  calib3d
 	CONFIG
 )
+
 find_package(Eigen3 REQUIRED)
 
 include (FindPkgConfig)

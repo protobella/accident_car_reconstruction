@@ -11,7 +11,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/features2d.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
-
+#include <opencv2/calib3d.hpp>
 #include <cmath>
 
 // Subscriber
@@ -25,10 +25,13 @@ ros::ServiceClient client;
 geometry_msgs::Point drone_position;
 std::vector<cv::Point2f> keypoints_as_waypoints;
 std::vector<cv::Point3d> waypoints;
-std::vector<cv::KeyPoint> keypoints;
+cv::Mat descriptorsL, descriptorsR;
+std::vector<cv::KeyPoint> keypointsL, keypointsR;
 std::vector<int> idx;
 int i;
+int camera_flag[2] = {0,0};
 double rise, pitch, roll;
+
 
 // common variables
 int flag = 0;
@@ -45,38 +48,107 @@ void stageone() {
   drone->velMode(false);
   drone->takeOff();
   drone->posCtrl(false);
-  drone->rise(0.2);
+  drone->moveTo(0.5,0,1);
 
   flag = 1;
 }
-double radians(double degree) {
-  double pi = 3.14159265359;
-  return (degree * (pi / 180));
-}
 
 void keypoint_to_coordinate_translate() {
-  double height = 480, width= 640;
-  double fov = 45;
+  cv::Mat cameraMatrix = (cv::Mat1d(3, 3, CV_32F) << 343.49636753580074, 0.0,320.5,
+                                           0.0, 343.49636753580074,
+                                           240.5, 0.0, 0.0, 1.0);
 
-  double altitude = drone_position.z;
-  double fov_radians = radians(fov);
+  cv::Mat distCoeffs = (cv::Mat1d(1, 5) << 0.0, 0.0, 0.0, 0.0, 0.0);
+  // cv::BFMatcher matcher(cv::NORM_HAMMING);
 
-  double scale_x, scale_y;
+  // std::vector<cv::DMatch> matches;
+  // matcher.match(descriptorsL, descriptorsR, matches);
+  cv::Ptr<cv::DescriptorMatcher> matcher = cv::makePtr<cv::FlannBasedMatcher>(cv::makePtr<cv::flann::LshIndexParams>(12, 20, 2));
 
-  scale_x = (2*altitude*tan(fov_radians/2))/width;
-  scale_x = (2*altitude*tan(fov_radians/2))/height;
-  
+  std::vector< std::vector<cv::DMatch> > matches;
+  ROS_INFO("HERE0");
+  matcher->knnMatch( descriptorsL, descriptorsR, matches, 2, cv::noArray() , false);
 
-  for (const cv::KeyPoint& keypoint : keypoints) {
-    double pixel_x = keypoint.pt.x;
-    double pixel_y = keypoint.pt.y;
+  ROS_INFO("HERE1");
+ //-- Filter matches using the Lowe's ratio test
+double max_dist = 0; double min_dist = 100;
 
-    double real_x = pixel_x * scale_x;
-    double real_y = pixel_y * scale_y;
-
-    cv::Point3d waypoint(real_x+drone_position.x, real_y+drone_position.y, 3.0);
-    waypoints.push_back(waypoint);
+  //-- Quick calculation of max and min distances between keypoints
+  for( int i = 0; i < matches.size(); i++ )
+  { double dist = matches[i][0].distance;
+    if( dist < min_dist ) min_dist = dist;
+    if( dist > max_dist ) max_dist = dist;
   }
+
+  printf("-- Max dist : %f \n", max_dist );
+  printf("-- Min dist : %f \n", min_dist );
+
+  //-- Draw only "good" matches (i.e. whose distance is less than 2*min_dist,
+  //-- or a small arbitary value ( 0.02 ) in the event that min_dist is very
+  //-- small)
+  //-- PS.- radiusMatch can also be used here.
+  std::vector< cv::DMatch > good_matches;
+
+  for( int i = 0; i < matches.size(); i++ )
+  { if( matches[i][0].distance <= cv::max(2*min_dist, 0.02) )
+    { good_matches.push_back( matches[i][0]); }
+  }
+  ROS_INFO("HERE2");
+  cv::Mat essential_matrix;
+  cv::Mat mask;
+  std::vector<cv::Point2f> ptsL, ptsR;
+
+  for (const cv::KeyPoint& kp :keypointsL){
+    ptsL.push_back(kp.pt);
+  }
+  for (const cv::KeyPoint& kp :keypointsR){
+    ptsR.push_back(kp.pt);
+  }
+  cv::Point2f point;
+  point.x=0;point.y=0;
+  if (ptsL.size()<ptsR.size())
+  {
+    while(ptsL.size()<ptsR.size()){
+      ptsL.push_back(point);
+    }
+  }
+  else if (ptsL.size()>ptsR.size()) {
+    while(ptsL.size()>ptsR.size()){
+      ptsL.push_back(point);
+    }
+  }
+  ROS_INFO("%d , %d", ptsL.size(), ptsR.size());
+
+  essential_matrix = cv::findEssentialMat(ptsL, ptsR, cameraMatrix, cv::RANSAC, 0.999, 1.0, mask);
+
+  cv::Mat R, t;
+  cv::recoverPose(essential_matrix, ptsL, ptsR, cameraMatrix, R, t, mask);
+  ROS_INFO("HERE3");
+  // Triangulate 3D points
+  cv::Mat1d projMat1 = (cv::Mat1d(3,4, CV_64F) << 1, 0,0,0,
+                                                  0, 1,0,0,
+                                                  0, 0,1,0);  // Identity matrix
+
+  cv::Mat1d projMat2 = (cv::Mat1d(3,4, CV_64F) << 343.49636753580074, 0.0,320.5, 0,
+                                           0.0, 343.49636753580074,
+                                           240.5,0, 0.0, 0.0, 1.0, 0);
+  std::vector<cv::Point2f> points1, points2;
+  for (size_t i = 0; i < good_matches.size(); ++i) {
+      if (mask.at<uchar>(i)) {
+          points1.push_back(keypointsL[good_matches[i].queryIdx].pt);
+          points2.push_back(keypointsR[good_matches[i].trainIdx].pt);
+      }
+  }
+  ROS_INFO("HERE4");
+  cv::Mat points4D;
+  cv::triangulatePoints(projMat1, projMat2, points1, points2, points4D);
+
+  // Convert 4D homogeneous coordinates to 3D
+  for (int i = 0; i < points4D.cols; ++i) {
+      cv::Mat point3D = points4D.col(i) / points4D.at<float>(3, i);
+      waypoints.push_back(cv::Point3f(point3D.at<float>(0), point3D.at<float>(1), point3D.at<float>(2)));
+  }
+  ROS_INFO("Points uncovered");
 }
 
 void waypoint_move(double x, double y, double z, geometry_msgs::Point dposition) {
@@ -123,7 +195,8 @@ void poscallback (const geometry_msgs::Pose::ConstPtr &msg) {
     drone->hover();
     activate_camera = true;
   }
-  if (flag == 2) {
+  if ((flag == 2) && (camera_flag[0]==1) && (camera_flag[1]=1)) {
+    // activate_camera = false;
     //TODO: function which translates  keypoints_as_waypoints to real world coordinates
     keypoint_to_coordinate_translate();
     // start movement to waypoints
@@ -148,9 +221,40 @@ void poscallback (const geometry_msgs::Pose::ConstPtr &msg) {
   }
 }
 
-void imageCallback(const sensor_msgs::ImageConstPtr& msg) {
+void imageCallback1(const sensor_msgs::ImageConstPtr& msg) {
   if (activate_camera) {
     try {
+      if (camera_flag[0]==0) {
+      cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+
+      cv::Mat gray_image;
+      cv::cvtColor(cv_ptr->image, gray_image, cv::COLOR_BGR2GRAY);
+
+      cv::GaussianBlur(gray_image, gray_image, cv::Size(5,5), 0);
+
+      cv::Ptr<cv::Feature2D> fdetector = cv::ORB::create();
+
+      fdetector->detectAndCompute(gray_image, cv::Mat(), keypointsL, descriptorsL);
+
+      // cv::Mat image_with_keypoints;
+      // cv::drawKeypoints(gray_image, keypointsL, image_with_keypoints);
+      //cv::KeyPoint::convert(keypointsL, keypoints_as_waypoints, idx);
+      // cv::imshow("Manipulated Image With KeypointsL", image_with_keypoints);
+      // cv::waitKey(30);
+      flag = 2;
+      camera_flag[0]=1;
+      }
+    }
+    catch (cv_bridge::Exception& e) {
+      ROS_ERROR("Could not convert from '%s' to 'bgr8'.", msg->encoding.c_str());
+    }
+  }
+
+}
+void imageCallback2(const sensor_msgs::ImageConstPtr& msg) {
+  if (activate_camera) {
+    try {
+      if (camera_flag[1]==0) {
       cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
 
       cv::Mat gray_image;
@@ -161,20 +265,21 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg) {
       cv::Ptr<cv::Feature2D> fdetector = cv::ORB::create();
 
       cv::Mat descriptors;
-      fdetector->detectAndCompute(gray_image, cv::Mat(), keypoints, descriptors);
+      fdetector->detectAndCompute(gray_image, cv::Mat(), keypointsR, descriptorsR);
 
-      cv::Mat image_with_keypoints;
-      cv::drawKeypoints(gray_image, keypoints, image_with_keypoints);
-      //cv::KeyPoint::convert(keypoints, keypoints_as_waypoints, idx);
-      // cv::imshow("Manipulated Image With Keypoints", image_with_keypoints);
+      // cv::Mat image_with_keypoints;
+      // cv::drawKeypoints(gray_image, keypointsR, image_with_keypoints);
+      //cv::KeyPoint::convert(keypointsR, keypoints_as_waypoints, idx);
+      // cv::imshow("Manipulated Image With KeypointsR", image_with_keypoints);
       // cv::waitKey(30);
       flag = 2;
+      camera_flag[1]=1; 
+      }
     }
     catch (cv_bridge::Exception& e) {
       ROS_ERROR("Could not convert from '%s' to 'bgr8'.", msg->encoding.c_str());
     }
   }
-  activate_camera = false;
 }
 
 int main(int argc, char **argv) {
@@ -190,12 +295,15 @@ int main(int argc, char **argv) {
   robotpos = node.subscribe<geometry_msgs::Pose>("drone/gt_pose",1,poscallback);
   
   // image callback
-  // cv::namedWindow("Manipulated Image With Keypoints");
-  image_transport::ImageTransport it(node);
-  image_transport::Subscriber sub = it.subscribe("/drone/down_camera/image_raw", 1, imageCallback);
+  //cv::namedWindow("Manipulated Image With KeypointsL");
+  //cv::namedWindow("Manipulated Image With KeypointsR");
+  image_transport::ImageTransport itL(node);
+  image_transport::ImageTransport itR(node);
+  image_transport::Subscriber left = itL.subscribe("/drone/down_camera_left/image_raw", 1, imageCallback1);
+  image_transport::Subscriber right = itR.subscribe("/drone/down_camera_right/image_raw", 1, imageCallback2);
   ros::spin();
-  // cv::destroyWindow("Manipulated Image With Keypoints");
-
+  //cv::destroyWindow("Manipulated Image With KeypointsL");
+  //cv::destroyWindow("Manipulated Image With KeypointsR");
   // generate mesh file
   // client = node.serviceClient<std_srvs::Empty>("/voxblox_node/generate_mesh");
   // if (client.call(srv)) {
