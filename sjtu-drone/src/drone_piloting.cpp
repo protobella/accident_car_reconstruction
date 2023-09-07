@@ -27,8 +27,14 @@ std::vector<cv::Point2f> keypoints_as_waypoints;
 std::vector<cv::Point3d> waypoints;
 std::vector<cv::KeyPoint> keypoints;
 std::vector<int> idx;
-int i;
+int i = 0;
 double rise, pitch, roll;
+
+// fixed waypoints
+const int waypoint_size =23;
+double waypointx[waypoint_size] = {35.75, 37, 38, 41, 43, 45, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 43, 41, 38, 37, 35.75};
+double waypointy[waypoint_size] = {-1.85, 0, 1, 1.2, 1.2, 0.9, 0.5, 0, -0.5, -1.2, -2, -2.5, -3, -3.5, -4, -4.5, -5, -5.5, -5.5, -4.7, -3.9, -2.6, -1.85};
+double waypointz[waypoint_size] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 
 // common variables
 int flag = 0;
@@ -45,7 +51,7 @@ void stageone() {
   drone->velMode(false);
   drone->takeOff();
   drone->posCtrl(false);
-  drone->rise(1);
+  drone->rise(0.2);
 
   flag = 1;
 }
@@ -125,27 +131,30 @@ void poscallback (const geometry_msgs::Pose::ConstPtr &msg) {
   }
   if (flag == 2) {
     //TODO: function which translates  keypoints_as_waypoints to real world coordinates
-    keypoint_to_coordinate_translate();
+    //keypoint_to_coordinate_translate();
     // start movement to waypoints
-    flag = 3;
-  }
-  if (flag == 3) {
-    if (i < (sizeof(waypoints)/sizeof(waypoints[0]))) {
-      waypoint_move(waypoints[i].x, waypoints[i].y, waypoints[i].z, drone_position);
+    if (i < waypoint_size) {
+      waypoint_move(waypointx[i], waypointy[i], waypointz[i], drone_position);
     }
-    else {
-      flag = 4;
-    }
-    // for (int i = 0; i < keypoints_as_waypoints.size(); i++) {
-    //   //TODO: get a function that controls drone to move in the direction of the waypoint
-    //   //https://stackoverflow.com/questions/21613246/what-is-the-structure-of-point2f-in-opencv
-    //   drone->moveTo(keypoints_as_waypoints[i].y, keypoints_as_waypoints[i].x, 1);
-    //   while (distance_to_waypoint(i)>1);
-    // }
+    //flag = 3;
   }
-  if (flag == 4) {
-    //die
-  }
+  // if (flag == 3) {
+  //   if (i < (sizeof(waypoints)/sizeof(waypoints[0]))) {
+  //     waypoint_move(waypoints[i].x, waypoints[i].y, waypoints[i].z, drone_position);
+  //   }
+  //   else {
+  //     flag = 4;
+  //   }
+  //   // for (int i = 0; i < keypoints_as_waypoints.size(); i++) {
+  //   //   //TODO: get a function that controls drone to move in the direction of the waypoint
+  //   //   //https://stackoverflow.com/questions/21613246/what-is-the-structure-of-point2f-in-opencv
+  //   //   drone->moveTo(keypoints_as_waypoints[i].y, keypoints_as_waypoints[i].x, 1);
+  //   //   while (distance_to_waypoint(i)>1);
+  //   // }
+  // }
+  // if (flag == 4) {
+  //   //die
+  // }
 }
 
 void imageCallback(const sensor_msgs::ImageConstPtr& msg) {
@@ -190,11 +199,12 @@ int main(int argc, char **argv) {
   robotpos = node.subscribe<geometry_msgs::Pose>("drone/gt_pose",1,poscallback);
   
   // image callback
-  // cv::namedWindow("Manipulated Image With Keypoints");
+  //cv::namedWindow("Manipulated Image With Keypoints");
   image_transport::ImageTransport it(node);
-  image_transport::Subscriber sub = it.subscribe("/drone/down_camera/image_raw", 1, imageCallback);
+  image_transport::Subscriber sub_left = it.subscribe("/drone/down_camera_left/image_raw", 1, imageCallback);
+  image_transport::Subscriber sub_right = it.subscribe("/drone/down_camera_right/image_raw", 1, imageCallback);
   ros::spin();
-  // cv::destroyWindow("Manipulated Image With Keypoints");
+  //cv::destroyWindow("Manipulated Image With Keypoints");
 
   // generate mesh file
   // client = node.serviceClient<std_srvs::Empty>("/voxblox_node/generate_mesh");

@@ -56,7 +56,7 @@
   </gazebo>
   <!-- Sensors -->
   <gazebo reference="base_link">
-    	<!-- <sensor name='sensor_imu' type='imu'>
+    	<sensor name='sensor_imu' type='imu'>
         <always_on> 1 </always_on>
         <update_rate> 100 </update_rate>
         <pose> 0 0 0 0 0 0 </pose>
@@ -75,9 +75,8 @@
             </accel>
           </noise>
         </imu>
-      </sensor> -->
-
-
+      </sensor>
+      
       <!-- Sonar sensor in 100fps -->
       <!-- <sensor name='sensor_sonar' type='sonar'>
         <always_on>1</always_on>
@@ -177,6 +176,7 @@
       </plugin>
     </sensor>
   </gazebo>
+
   <!-- Laser sensor -->
   <xacro:include filename="$(find sjtu_drone)/urdf/velodyne.xacro"/>
   <xacro:HDL-32E parent="base_link" name="velodyne" topic="/velodyne_points" organize_cloud="${organize_cloud}" hz="10" samples="220" gpu="${gpu}">
