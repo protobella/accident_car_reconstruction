@@ -45,7 +45,7 @@ void stageone() {
   drone->velMode(false);
   drone->takeOff();
   drone->posCtrl(false);
-  drone->rise(1);
+  drone->rise(0.2);
 
   flag = 1;
 }
