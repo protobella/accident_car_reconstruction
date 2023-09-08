@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-15"?>
 <launch>
-  <arg name="voxel_size" default="0.20" />
+  <arg name="voxel_size" default="0.02" />
   <arg name="voxels_per_side" default="16" />
   <arg name="world_frame" default="base_link" />
   <arg name="pointcloud_topic" default="/velodyne_points" />
@@ -16,7 +16,7 @@
     <param name="icp_refine_roll_pitch" value="false" />
     <param name="update_mesh_every_n_sec" value="1.0" />
     <param name="mesh_min_weight" value="2" />
-    <param name="method" value="fast" />
+    <param name="method" value="merged" />
     <param name="max_ray_length_m" value="10.0" />
     <param name="use_const_weight" value="true" />
     <param name="world_frame" value="$(arg world_frame)"/>

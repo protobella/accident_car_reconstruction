@@ -11,6 +11,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/features2d.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
+#include <std_srvs/Empty.h>
 
 #include <cmath>
 
@@ -20,7 +21,7 @@ ros::Subscriber down_camera;
 
 // Service
 ros::ServiceClient client;
-
+std_srvs::Empty srv;
 // waypoint variables
 geometry_msgs::Point drone_position;
 std::vector<cv::Point2f> keypoints_as_waypoints;
@@ -32,8 +33,8 @@ double rise, pitch, roll;
 
 // fixed waypoints
 const int waypoint_size =23;
-double waypointx[waypoint_size] = {35.75, 37, 38, 41, 43, 45, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 43, 41, 38, 37, 35.75};
-double waypointy[waypoint_size] = {-1.85, 0, 1, 1.2, 1.2, 0.9, 0.5, 0, -0.5, -1.2, -2, -2.5, -3, -3.5, -4, -4.5, -5, -5.5, -5.5, -4.7, -3.9, -2.6, -1.85};
+double waypointx[waypoint_size] = {35.75, 37, 38, 41, 43, 45, 47.5, 47.5, 47.5, 47.5, 47.5, 47.5, 47.5, 47.5, 47.5, 47.5, 47.5, 47.5, 43, 41, 38, 37, 35.75};
+double waypointy[waypoint_size] = {-1.85, 0, 1, 2, 2, 1.5, 1, 0, -0.5, -1.2, -2, -2.5, -3, -3.5, -4, -4.5, -5, -5.5, -5.5, -5, -4.5, -4, -3};
 double waypointz[waypoint_size] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 
 // common variables
@@ -89,24 +90,24 @@ void waypoint_move(double x, double y, double z, geometry_msgs::Point dposition)
   ROS_INFO("Moving to (%f,%f,%f)", x, y, z);
 
   if (dposition.z >= z) {
-    rise = -0.4;
+    rise = -0.1;
     ROS_INFO("Drone going down");
   } else if (dposition.z < z) {
-    rise = 0.4;
+    rise = 0.1;
     ROS_INFO("Drone going up");
   }
   if (dposition.x >= x) {
-    pitch = -0.4;
+    pitch = -0.1;
     ROS_INFO("Drone going back");
   } else if (dposition.x < x) {
-    pitch = 0.4;
+    pitch = 0.1;
     ROS_INFO("Drone going front");
   }
   if (dposition.y >= y) {
-    roll = -0.4;
+    roll = -0.1;
     ROS_INFO("Drone going right");
   } else if (dposition.y < y) {
-    roll = 0.4;
+    roll = 0.1;
     ROS_INFO("Drone going left");
   }
 
@@ -125,7 +126,7 @@ void poscallback (const geometry_msgs::Pose::ConstPtr &msg) {
   if (flag == 0) {
     stageone();
   }
-  if ((flag ==1) && (drone_position.z > 10)) {
+  if ((flag ==1) && (drone_position.z > 1)) {
     drone->hover();
     activate_camera = true;
   }
@@ -136,7 +137,10 @@ void poscallback (const geometry_msgs::Pose::ConstPtr &msg) {
     if (i < waypoint_size) {
       waypoint_move(waypointx[i], waypointy[i], waypointz[i], drone_position);
     }
-    //flag = 3;
+    else{
+      flag = 3;
+    }
+    
   }
   // if (flag == 3) {
   //   if (i < (sizeof(waypoints)/sizeof(waypoints[0]))) {
@@ -147,7 +151,7 @@ void poscallback (const geometry_msgs::Pose::ConstPtr &msg) {
   //   }
   //   // for (int i = 0; i < keypoints_as_waypoints.size(); i++) {
   //   //   //TODO: get a function that controls drone to move in the direction of the waypoint
-  //   //   //https://stackoverflow.com/questions/21613246/what-is-the-structure-of-point2f-in-opencv
+  //   //   //https://stackoverflow.com/questions/21613247.5/what-is-the-structure-of-point2f-in-opencv
   //   //   drone->moveTo(keypoints_as_waypoints[i].y, keypoints_as_waypoints[i].x, 1);
   //   //   while (distance_to_waypoint(i)>1);
   //   // }
@@ -203,15 +207,19 @@ int main(int argc, char **argv) {
   image_transport::ImageTransport it(node);
   image_transport::Subscriber sub_left = it.subscribe("/drone/down_camera_left/image_raw", 1, imageCallback);
   image_transport::Subscriber sub_right = it.subscribe("/drone/down_camera_right/image_raw", 1, imageCallback);
-  ros::spin();
+  
   //cv::destroyWindow("Manipulated Image With Keypoints");
+  if (flag == 3){
+    // generate mesh file
+    client = node.serviceClient<std_srvs::Empty>("/voxblox_node/generate_mesh");
+    if (client.call(srv)) {
+      ROS_INFO("Success to call service voxblox_node/generate_mesh!");
+    } else {
+      ROS_ERROR("Failed to call service voxblox_node/generate_mesh");
+      return 1;
+    }
+    flag=4;
+  }
 
-  // generate mesh file
-  // client = node.serviceClient<std_srvs::Empty>("/voxblox_node/generate_mesh");
-  // if (client.call(srv)) {
-  //   ROS_INFO("Success to call service voxblox_node/generate_mesh!");
-  // } else {
-  //   ROS_ERROR("Failed to call service voxblox_node/generate_mesh");
-  //   return 1;
-  // }
+  ros::spin();
 }
