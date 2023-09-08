@@ -235,10 +235,11 @@ void imageCallback1(const sensor_msgs::ImageConstPtr& msg) {
       cv::Ptr<cv::Feature2D> fdetector = cv::ORB::create();
 
       fdetector->detectAndCompute(gray_image, cv::Mat(), keypointsL, descriptorsL);
-
-      // cv::Mat image_with_keypoints;
-      // cv::drawKeypoints(gray_image, keypointsL, image_with_keypoints);
+      cv::imwrite("/home/alphad/catkin_ws/CroquiL.jpg", cv_ptr->image);      
+      cv::Mat image_with_keypoints;
+      cv::drawKeypoints(gray_image, keypointsL, image_with_keypoints);
       //cv::KeyPoint::convert(keypointsL, keypoints_as_waypoints, idx);
+      cv::imwrite("/home/alphad/catkin_ws/CroquiL_key.jpg", image_with_keypoints);
       // cv::imshow("Manipulated Image With KeypointsL", image_with_keypoints);
       // cv::waitKey(30);
       flag = 2;
@@ -266,10 +267,11 @@ void imageCallback2(const sensor_msgs::ImageConstPtr& msg) {
 
       cv::Mat descriptors;
       fdetector->detectAndCompute(gray_image, cv::Mat(), keypointsR, descriptorsR);
-
-      // cv::Mat image_with_keypoints;
-      // cv::drawKeypoints(gray_image, keypointsR, image_with_keypoints);
+      cv::imwrite("/home/alphad/catkin_ws/CroquiR.jpg", cv_ptr->image);
+      cv::Mat image_with_keypoints;
+      cv::drawKeypoints(gray_image, keypointsR, image_with_keypoints);
       //cv::KeyPoint::convert(keypointsR, keypoints_as_waypoints, idx);
+      cv::imwrite("/home/alphad/catkin_ws/CroquiR_key.jpg", image_with_keypoints);
       // cv::imshow("Manipulated Image With KeypointsR", image_with_keypoints);
       // cv::waitKey(30);
       flag = 2;
