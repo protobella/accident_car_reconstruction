@@ -20,7 +20,7 @@ ros::Subscriber down_camera;
 
 // Service
 ros::ServiceClient client;
-
+ 
 // waypoint variables
 geometry_msgs::Point drone_position;
 std::vector<cv::Point2f> keypoints_as_waypoints;
